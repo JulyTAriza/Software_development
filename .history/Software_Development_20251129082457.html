@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Career Quest - Software Developer Career</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #0a0a0a;
+            font-family: 'Press Start 2P', monospace;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a0033 0%, #0d001a 100%);
+            overflow: hidden;
+        }
+        
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 0, 20, 0.95);
+            padding: 20px 40px;
+            z-index: 100;
+            border-bottom: 4px solid #b794f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(183, 148, 246, 0.3);
+        }
+        
+        .level-info {
+            font-size: 16px;
+            color: #00ffaa;
+            text-shadow: 0 0 10px #00ffaa;
+        }
+        
+        .stars-collected {
+            font-size: 18px;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        
+        .next-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 3px solid #b794f6;
+            color: white;
+            font-family: 'Press Start 2P';
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(183, 148, 246, 0.5);
+        }
+        
+        .next-btn.active {
+            animation: btnPulse 1s infinite;
+        }
+        
+        @keyframes btnPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(183, 148, 246, 0.5);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(183, 148, 246, 0.8);
+            }
+        }
+        
+        .next-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(183, 148, 246, 0.9);
+        }
+        
+        .next-btn:disabled {
+            background: #333;
+            border-color: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+            box-shadow: none;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        .info-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 8px solid #ffd700;
+            padding: 40px;
+            border-radius: 20px;
+            z-index: 200;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.6);
+            animation: modalPop 0.4s ease-out;
+        }
+        
+        @keyframes modalPop {
+            0% { transform: translate(-50%, -50%) scale(0.3) rotate(-10deg); opacity: 0; }
+            70% { transform: translate(-50%, -50%) scale(1.05) rotate(2deg); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .modal-title {
+            color: #ffd700;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 3px 3px #000;
+        }
+        
+        .modal-text {
+            color: white;
+            font-size: 14px;
+            line-height: 2;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px rgba(0,0,0,0.5);
+        }
+        
+        .modal-close {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-family: 'Press Start 2P';
+            font-size: 12px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: #ffed4e;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #ffd700;
+        }
+        
+        .controls-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 0, 20, 0.9);
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 11px;
+            color: #00ffaa;
+            z-index: 100;
+            border: 3px solid #00ffaa;
+            text-shadow: 0 0 10px #00ffaa;
+        }
+        
+        /* WELCOME SCREEN */
+        .welcome-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+            animation: fadeIn 0.5s;
+        }
+        
+        .welcome-title {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-shadow: 5px 5px #000;
+            animation: float 2s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .welcome-subtitle {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px rgba(0,0,0,0.5);
+        }
+        
+        .welcome-text {
+            font-size: 14px;
+            color: #e0e0e0;
+            text-align: center;
+            line-height: 2;
+            max-width: 700px;
+            margin-bottom: 50px;
+        }
+        
+        .start-btn {
+            padding: 20px 50px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            font-family: 'Press Start 2P';
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 10px;
+            animation: btnPulse 2s infinite;
+            transition: all 0.3s;
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ffd700;
+        }
+        
+        /* COMPLETION SCREEN */
+        .completion-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .completion-title {
+            font-size: 52px;
+            color: #ffd700;
+            margin-bottom: 30px;
+            text-shadow: 5px 5px #000;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .completion-subtitle {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px rgba(0,0,0,0.5);
+        }
+        
+        .completion-text {
+            font-size: 14px;
+            color: #e0e0e0;
+            text-align: center;
+            line-height: 2.2;
+            max-width: 800px;
+            margin-bottom: 50px;
+        }
+        
+        .completion-stars {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: float 3s infinite;
+        }
+        
+        .pixel-decoration {
+            position: absolute;
+            font-size: 60px;
+            opacity: 0.3;
+            animation: float 4s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="pixel-decoration" style="top: 10%; left: 10%;">🎮</div>
+        <div class="pixel-decoration" style="top: 20%; right: 15%;">💻</div>
+        <div class="pixel-decoration" style="bottom: 15%; left: 20%;">⭐</div>
+        <div class="pixel-decoration" style="bottom: 25%; right: 10%;">🚀</div>
+        
+        <div class="welcome-title">🎮 CAREER QUEST 🎮</div>
+        <div class="welcome-subtitle">Software Developer Career</div>
+        <div class="welcome-text">
+            Welcome to an interactive journey through the Software Developer career!<br><br>
+            Explore 4 levels representing education, skills, experience, and goals in software development.<br>
+            Collect all stars to unlock achievements and progress to the next level.
+        </div>
+        <button class="start-btn" onclick="startGame()">START QUEST</button>
+    </div>
+    
+    <div class="game-container" style="display: none;" id="gameContainer">
+        <div class="hud">
+            <div class="level-info" id="levelInfo">LEVEL 1 - ACADEMIC BACKGROUND</div>
+            <div class="stars-collected" id="starsInfo">⭐ 0/3</div>
+            <button class="next-btn" id="nextBtn" onclick="nextLevel()" disabled>NEXT LEVEL</button>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="controls-hint">
+            🎮 Character moves automatically | Collect all ⭐ | Press "NEXT LEVEL" when ready
+        </div>
+    </div>
+    
+    <script>
+        let gameStarted = false;
+        
+        function startGame() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'block';
+            gameStarted = true;
+            initGame();
+        }
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game dimensions
+        let GAME_WIDTH = window.innerWidth;
+        let GAME_HEIGHT = window.innerHeight - 100;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+        
+        // Game state
+        let currentLevel = 0;
+        let player = {
+            x: 100,
+            y: 0,
+            width: 40,
+            height: 40,
+            velocityY: 0,
+            velocityX: 0,
+            grounded: false,
+            lastPlatform: null
+        };
+        
+        const GRAVITY = 0.8;
+        const JUMP_POWER = -18;
+        const MOVE_SPEED = 4;
+        
+        // Levels data - TEXTOS ACTUALIZADOS A TERCERA PERSONA
+        const levels = [
+            {
+                id: 1,
+                name: "ACADEMIC BACKGROUND",
+                color: "#7c3aed",
+                secondColor: "#5b21b6",
+                platforms: [
+                    {x: 0, y: GAME_HEIGHT - 100, w: GAME_WIDTH * 0.35, h: 100},
+                    {x: GAME_WIDTH * 0.25, y: GAME_HEIGHT - 220, w: GAME_WIDTH * 0.35, h: 50},
+                    {x: GAME_WIDTH * 0.45, y: GAME_HEIGHT - 350, w: GAME_WIDTH * 0.4, h: 50},
+                    {x: GAME_WIDTH * 0.1, y: GAME_HEIGHT - 480, w: GAME_WIDTH * 0.35, h: 50}
+                ],
+                stars: [
+                    {x: GAME_WIDTH * 0.15, y: GAME_HEIGHT - 150, collected: false, 
+                     text: "Software developers typically study Software Development Technology or related programs"},
+                    {x: GAME_WIDTH * 0.35, y: GAME_HEIGHT - 270, collected: false, 
+                     text: "Certifications like Microsoft AZ-900 and AI-900"},
+                    {x: GAME_WIDTH * 0.55, y: GAME_HEIGHT - 400, collected: false, 
+                     text: "Continuous learning through platforms like Platzi helps developers stay current with emerging technologies and industry best practices."}
+                ],
+                // LÓGICA ESPECÍFICA PARA NIVEL 1
+                updateLogic: function(player, targetStar) {
+                    const distanceX = targetStar.x - player.x;
+                    const distanceY = targetStar.y - player.y;
+                    
+                    // Movimiento horizontal
+                    if (Math.abs(distanceX) > 25) {
+                        player.velocityX = distanceX > 0 ? MOVE_SPEED : -MOVE_SPEED;
+                    } else {
+                        player.velocityX = 0;
+                    }
+                    
+                    // Saltos específicos para nivel 1
+                    if (player.grounded) {
+                        // Para la segunda estrella (plataforma más alta)
+                        if (targetStarIndex === 1 && Math.abs(distanceX) < 100) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                        // Para la tercera estrella (plataforma más alta)
+                        else if (targetStarIndex === 2 && Math.abs(distanceX) < 150) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                    }
+                }
+            },
+            {
+                id: 2,
+                name: "TECHNICAL SKILLS",
+                color: "#ec4899",
+                secondColor: "#be185d",
+                platforms: [
+                    {x: 0, y: GAME_HEIGHT - 100, w: GAME_WIDTH * 0.32, h: 100},
+                    {x: GAME_WIDTH * 0.23, y: GAME_HEIGHT - 230, w: GAME_WIDTH * 0.35, h: 50},
+                    {x: GAME_WIDTH * 0.02, y: GAME_HEIGHT - 360, w: GAME_WIDTH * 0.35, h: 50},
+                    {x: GAME_WIDTH * 0.45, y: GAME_HEIGHT - 490, w: GAME_WIDTH * 0.4, h: 50}
+                ],
+                stars: [
+                    {x: GAME_WIDTH * 0.1, y: GAME_HEIGHT - 150, collected: false, 
+                     text: "Python, VB .NET, C# .NET, and C++ for diverse applications across multiple platforms."},
+                    {x: GAME_WIDTH * 0.3, y: GAME_HEIGHT - 280, collected: false, 
+                     text: "eact, Angular, Vue.js, Next.js, and Node.js for building dynamic, scalable, and responsive applications."},
+                    {x: GAME_WIDTH * 0.1, y: GAME_HEIGHT - 410, collected: false, 
+                     text: "Frontend and backend skills, plus database management and system infrastructure knowledge."}
+                ],
+                // LÓGICA ESPECÍFICA PARA NIVEL 2
+                updateLogic: function(player, targetStar) {
+                    const distanceX = targetStar.x - player.x;
+                    const distanceY = targetStar.y - player.y;
+                    
+                    // Movimiento horizontal más agresivo para nivel 2
+                    if (Math.abs(distanceX) > 20) {
+                        player.velocityX = distanceX > 0 ? MOVE_SPEED : -MOVE_SPEED;
+                    } else {
+                        player.velocityX = 0;
+                    }
+                    
+                    // Saltos específicos para nivel 2
+                    if (player.grounded) {
+                        // Para la segunda estrella (necesita salto lateral)
+                        if (targetStarIndex === 1 && Math.abs(distanceX) > 50 && Math.abs(distanceX) < 200) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                        // Para la tercera estrella (necesita salto alto)
+                        else if (targetStarIndex === 2 && distanceY < -50 && Math.abs(distanceX) < 100) {
+                            player.velocityY = JUMP_POWER * 1.1; // Salto más alto
+                            player.grounded = false;
+                        }
+                    }
+                }
+            },
+            {
+                id: 3,
+                name: "WORK EXPERIENCE",
+                color: "#f59e0b",
+                secondColor: "#d97706",
+                platforms: [
+                    {x: 0, y: GAME_HEIGHT - 100, w: GAME_WIDTH * 0.3, h: 100},
+                    {x: GAME_WIDTH * 0.2, y: GAME_HEIGHT - 220, w: GAME_WIDTH * 0.4, h: 50},
+                    {x: GAME_WIDTH * 0.5, y: GAME_HEIGHT - 350, w: GAME_WIDTH * 0.35, h: 50},
+                    {x: GAME_WIDTH * 0.15, y: GAME_HEIGHT - 480, w: GAME_WIDTH * 0.42, h: 50}
+                ],
+                stars: [
+                    {x: GAME_WIDTH * 0.1, y: GAME_HEIGHT - 150, collected: false, 
+                     text: "Design and implement system modules, contributing to critical business operations across various industries."},
+                    {x: GAME_WIDTH * 0.35, y: GAME_HEIGHT - 270, collected: false, 
+                     text: "Database monitoring, management, and optimization to ensure high performance and system reliability."},
+                    {x: GAME_WIDTH * 0.25, y: GAME_HEIGHT - 400, collected: false, 
+                     text: "Created complex stored procedures for tax reporting, ensuring data accuracy and performance in critical financial systems."}
+                ],
+                // LÓGICA ESPECÍFICA PARA NIVEL 3
+                updateLogic: function(player, targetStar) {
+                    const distanceX = targetStar.x - player.x;
+                    const distanceY = targetStar.y - player.y;
+                    
+                    // Movimiento horizontal preciso para nivel 3
+                    if (Math.abs(distanceX) > 15) {
+                        player.velocityX = distanceX > 0 ? MOVE_SPEED : -MOVE_SPEED;
+                    } else {
+                        player.velocityX = 0;
+                    }
+                    
+                    // Saltos específicos para nivel 3
+                    if (player.grounded) {
+                        // Para la segunda estrella (salto lateral)
+                        if (targetStarIndex === 1 && Math.abs(distanceX) > 80 && distanceY < -30) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                        // Para la tercera estrella (salto alto)
+                        else if (targetStarIndex === 2 && distanceY < -50) {
+                            player.velocityY = JUMP_POWER * 1.2; // Salto más alto
+                            player.grounded = false;
+                        }
+                        // Si está cerca pero no recolecta, pequeño salto
+                        else if (Math.abs(distanceX) < 40 && Math.abs(distanceY) < 40 && !targetStar.collected) {
+                            player.velocityY = JUMP_POWER * 0.7;
+                            player.grounded = false;
+                        }
+                    }
+                }
+            },
+            {
+                id: 4,
+                name: "SOFT SKILLS & GOALS",
+                color: "#06b6d4",
+                secondColor: "#0891b2",
+                // PLATAFORMAS SIMPLIFICADAS - SOLO 3 PLATAFORMAS
+                platforms: [
+                    {x: 0, y: GAME_HEIGHT - 100, w: GAME_WIDTH * 0.45, h: 100},
+                    {x: GAME_WIDTH * 0.35, y: GAME_HEIGHT - 250, w: GAME_WIDTH * 0.4, h: 50},
+                    {x: GAME_WIDTH * 0.1, y: GAME_HEIGHT - 380, w: GAME_WIDTH * 0.35, h: 50}
+                ],
+                // ESTRELLAS MÁS CERCANAS Y ACCESIBLES
+                stars: [
+                    {x: GAME_WIDTH * 0.15, y: GAME_HEIGHT - 150, collected: false, 
+                     text: "Strong communication, teamwork, and leadership skills"},
+                    {x: GAME_WIDTH * 0.45, y: GAME_HEIGHT - 300, collected: false, 
+                     text: "Organization, adaptability, responsibility, and attention to detail."},
+                    {x: GAME_WIDTH * 0.2, y: GAME_HEIGHT - 430, collected: false, 
+                     text: "AI, cloud computing, and automation for professionals committed to continuous learning."}
+                ],
+                // LÓGICA SIMPLIFICADA PARA NIVEL 4
+                updateLogic: function(player, targetStar) {
+                    const distanceX = targetStar.x - player.x;
+                    const distanceY = targetStar.y - player.y;
+                    
+                    // Movimiento horizontal simple
+                    if (Math.abs(distanceX) > 20) {
+                        player.velocityX = distanceX > 0 ? MOVE_SPEED : -MOVE_SPEED;
+                    } else {
+                        player.velocityX = 0;
+                    }
+                    
+                    // Saltos simples y directos
+                    if (player.grounded) {
+                        // Para la segunda estrella - salto a plataforma media
+                        if (targetStarIndex === 1 && Math.abs(distanceX) < 120 && distanceY < -50) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                        // Para la tercera estrella - salto a plataforma alta
+                        else if (targetStarIndex === 2 && Math.abs(distanceX) < 100 && distanceY < -80) {
+                            player.velocityY = JUMP_POWER * 1.1;
+                            player.grounded = false;
+                        }
+                        // Salto general cuando está cerca de una plataforma más alta
+                        else if (distanceY < -40 && Math.abs(distanceX) < 150) {
+                            player.velocityY = JUMP_POWER;
+                            player.grounded = false;
+                        }
+                    }
+                }
+            }
+        ];
+        
+        let showingModal = false;
+        let targetStarIndex = 0;
+        let waitingAtStar = false;
+        let jumpCooldown = 0;
+        let stuckTimer = 0;
+        let lastPlayerX = 0;
+        
+        function resetPlayer() {
+            const currentLevelData = levels[currentLevel];
+            const firstPlatform = currentLevelData.platforms[0];
+            player.x = firstPlatform.x + 80;
+            player.y = firstPlatform.y - player.height - 5;
+            player.velocityY = 0;
+            player.velocityX = 0;
+            player.grounded = true;
+            player.lastPlatform = firstPlatform;
+            targetStarIndex = 0;
+            waitingAtStar = false;
+            jumpCooldown = 0;
+            stuckTimer = 0;
+            lastPlayerX = player.x;
+        }
+        
+        function initGame() {
+            resetPlayer();
+            updateHUD();
+            gameLoop();
+        }
+        
+        // Draw pixel character
+        function drawPixelPlayer() {
+            const pixelSize = 4;
+            const x = player.x;
+            const y = player.y;
+            
+            const bodyPattern = [
+                [0,0,0,1,1,1,1,0,0,0],
+                [0,0,1,1,1,1,1,1,0,0],
+                [0,0,1,1,1,1,1,1,1,0],
+                [0,1,1,2,2,1,1,1,1,0],
+                [0,1,1,2,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,1,1,0],
+                [0,0,1,1,1,1,1,1,0,0],
+                [0,0,0,1,1,0,1,1,0,0],
+                [0,0,1,1,0,0,0,1,1,0],
+                [0,0,1,1,0,0,0,1,1,0]
+            ];
+            
+            for (let row = 0; row < bodyPattern.length; row++) {
+                for (let col = 0; col < bodyPattern[row].length; col++) {
+                    if (bodyPattern[row][col] === 1) {
+                        ctx.fillStyle = '#535353';
+                        ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
+                    } else if (bodyPattern[row][col] === 2) {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
+                    }
+                }
+            }
+        }
+        
+        function drawPixelStar(x, y) {
+            const pixelSize = 5;
+            const starPattern = [
+                [0,0,1,0,0],
+                [0,1,1,1,0],
+                [1,1,1,1,1],
+                [0,1,1,1,0],
+                [1,0,1,0,1]
+            ];
+            
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffd700';
+            ctx.fillStyle = '#ffd700';
+            
+            for (let row = 0; row < starPattern.length; row++) {
+                for (let col = 0; col < starPattern[row].length; col++) {
+                    if (starPattern[row][col] === 1) {
+                        ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
+                    }
+                }
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        function checkPlatformCollision() {
+            const currentLevelData = levels[currentLevel];
+            player.grounded = false;
+            
+            for (let platform of currentLevelData.platforms) {
+                if (player.x + player.width - 15 > platform.x &&
+                    player.x + 15 < platform.x + platform.w &&
+                    player.y + player.height >= platform.y - 5 &&
+                    player.y + player.height <= platform.y + 15 &&
+                    player.velocityY >= 0) {
+                    
+                    player.y = platform.y - player.height;
+                    player.velocityY = 0;
+                    player.grounded = true;
+                    player.lastPlatform = platform;
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function updatePlayer() {
+            const currentLevelData = levels[currentLevel];
+            
+            // Reducir el cooldown del salto
+            if (jumpCooldown > 0) jumpCooldown--;
+            
+            // Detectar si el jugador está atascado
+            if (Math.abs(player.x - lastPlayerX) < 2 && player.grounded) {
+                stuckTimer++;
+            } else {
+                stuckTimer = 0;
+            }
+            lastPlayerX = player.x;
+            
+            if (!showingModal && targetStarIndex < currentLevelData.stars.length && !waitingAtStar) {
+                const targetStar = currentLevelData.stars[targetStarIndex];
+                
+                if (!targetStar.collected) {
+                    // USAR LA LÓGICA ESPECÍFICA DE CADA NIVEL
+                    currentLevelData.updateLogic(player, targetStar);
+                    
+                    // Lógica de seguridad para evitar atascos
+                    if (stuckTimer > 90) {
+                        player.velocityY = JUMP_POWER;
+                        player.grounded = false;
+                        stuckTimer = 0;
+                    }
+                }
+            }
+            
+            // Apply horizontal movement
+            player.x += player.velocityX;
+            
+            // Apply gravity
+            player.velocityY += GRAVITY;
+            player.y += player.velocityY;
+            
+            // Check boundaries
+            if (player.x < 20) player.x = 20;
+            if (player.x + player.width > GAME_WIDTH - 20) player.x = GAME_WIDTH - player.width - 20;
+            
+            // Check if player fell off
+            if (player.y > GAME_HEIGHT + 200) {
+                resetPlayer();
+                return;
+            }
+            
+            // Platform collision
+            checkPlatformCollision();
+            
+            // Detección de estrellas mejorada
+            currentLevelData.stars.forEach((star, index) => {
+                if (!star.collected) {
+                    const dx = Math.abs(player.x - star.x);
+                    const dy = Math.abs(player.y - star.y);
+                    
+                    // Rango de detección consistente
+                    if (dx < 60 && dy < 60) {
+                        star.collected = true;
+                        waitingAtStar = true;
+                        player.velocityX = 0;
+                        showModal(star.text);
+                        
+                        setTimeout(() => {
+                            targetStarIndex = index + 1;
+                            waitingAtStar = false;
+                            stuckTimer = 0; // Reiniciar temporizador al cambiar estrella
+                        }, 800);
+                    }
+                }
+            });
+            
+            updateHUD();
+        }
+        
+        function drawLevel() {
+            const level = levels[currentLevel];
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+            gradient.addColorStop(0, level.color);
+            gradient.addColorStop(1, level.secondColor);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // Pixel stars background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            for (let i = 0; i < 120; i++) {
+                const x = (i * 137) % GAME_WIDTH;
+                const y = (i * 73) % GAME_HEIGHT;
+                const size = (i % 3) + 1;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            // Platforms
+            level.platforms.forEach(platform => {
+                // Main platform
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+                
+                // Platform top (darker for better visibility)
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(platform.x, platform.y, platform.w, 8);
+                
+                // Brick texture
+                ctx.strokeStyle = '#5a3921';
+                ctx.lineWidth = 2;
+                const brickWidth = 30;
+                const brickHeight = 15;
+                for (let i = 0; i < platform.w; i += brickWidth) {
+                    for (let j = 0; j < platform.h; j += brickHeight) {
+                        ctx.strokeRect(platform.x + i, platform.y + j, brickWidth, brickHeight);
+                    }
+                }
+            });
+            
+            // Stars
+            level.stars.forEach((star) => {
+                if (!star.collected) {
+                    drawPixelStar(star.x, star.y);
+                    
+                    // Add glow effect
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#ffd700';
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(star.x + 12, star.y + 12, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+        }
+        
+        function updateHUD() {
+            const level = levels[currentLevel];
+            const totalStars = level.stars.length;
+            const collectedInLevel = level.stars.filter(s => s.collected).length;
+            
+            document.getElementById('levelInfo').textContent = 
+                `LEVEL ${currentLevel + 1} - ${level.name}`;
+            document.getElementById('starsInfo').textContent = 
+                `⭐ ${collectedInLevel}/${totalStars}`;
+            
+            const nextBtn = document.getElementById('nextBtn');
+            if (collectedInLevel === totalStars) {
+                nextBtn.disabled = false;
+                nextBtn.classList.add('active');
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.classList.remove('active');
+            }
+        }
+        
+        function showModal(text) {
+            showingModal = true;
+            
+            const modal = document.createElement('div');
+            modal.className = 'info-modal';
+            modal.id = 'infoModal';
+            modal.innerHTML = `
+                <div class="modal-title">⭐ CAREER INSIGHT UNLOCKED! ⭐</div>
+                <div class="modal-text">${text}</div>
+                <button class="modal-close" onclick="closeModal()">CONTINUE (Press Enter)</button>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('infoModal');
+            if (modal) {
+                modal.remove();
+            }
+            showingModal = false;
+        }
+        
+        function nextLevel() {
+            if (currentLevel < levels.length - 1) {
+                currentLevel++;
+                resetPlayer();
+                updateHUD();
+            } else {
+                showCompletionScreen();
+            }
+        }
+        
+        function showCompletionScreen() {
+            document.getElementById('gameContainer').style.display = 'none';
+            
+            const screen = document.createElement('div');
+            screen.className = 'completion-screen';
+            screen.innerHTML = `
+                <div class="pixel-decoration" style="top: 8%; left: 8%;">🎓</div>
+                <div class="pixel-decoration" style="top: 15%; right: 12%;">💻</div>
+                <div class="pixel-decoration" style="bottom: 12%; left: 15%;">⚡</div>
+                <div class="pixel-decoration" style="bottom: 20%; right: 8%;">🚀</div>
+                
+                <div class="completion-stars">⭐⭐⭐</div>
+                <div class="completion-title">QUEST COMPLETED!</div>
+                <div class="completion-subtitle">Software Developer Career Path</div>
+                <div class="completion-text">
+                    🎮 Congratulations! All career levels explored! 🎮<br><br>
+                    You have successfully discovered the complete software developer journey:<br>
+                    ✓ Academic Background & Education<br>
+                    ✓ Technical Skills & Technologies<br>
+                    ✓ Work Experience & Responsibilities<br>
+                    ✓ Soft Skills & Future Opportunities<br><br>
+                    <strong style="color: #ffd700;">Software development offers exciting opportunities in our digital world!</strong>
+                </div>
+            `;
+            document.body.appendChild(screen);
+        }
+        
+        // Input handling
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && showingModal) {
+                closeModal();
+            }
+        });
+        
+        // Resize handling
+        window.addEventListener('resize', () => {
+            GAME_WIDTH = window.innerWidth;
+            GAME_HEIGHT = window.innerHeight - 100;
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+        });
+        
+        function gameLoop() {
+            if (gameStarted) {
+                if (!showingModal) {
+                    updatePlayer();
+                }
+                drawLevel();
+                drawPixelPlayer();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start animation loop
+        gameLoop();
+    </script>
+</body>
+</html>
